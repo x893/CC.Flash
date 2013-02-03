@@ -12,4 +12,4 @@ for details
         DD (P2.2) - pin 6
         RST       - pin 7
         GND       - GND
-3. Start program CC.Flash.exe
+3. Start program CC.Flash.exe (need .NET 2.0)
