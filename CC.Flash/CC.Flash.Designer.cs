@@ -481,7 +481,7 @@
 			this.btnFlashCC.Name = "btnFlashCC";
 			this.btnFlashCC.Size = new System.Drawing.Size(177, 28);
 			this.btnFlashCC.TabIndex = 30;
-			this.btnFlashCC.Text = "P1.1 5 Pulses";
+			this.btnFlashCC.Text = "5 pulses on P2.3 && P2.4";
 			this.toolTip.SetToolTip(this.btnFlashCC, "Make 5 pulses on target P1.1 line");
 			this.btnFlashCC.UseVisualStyleBackColor = true;
 			this.btnFlashCC.Click += new System.EventHandler(this.btnFlashCC_Click);
