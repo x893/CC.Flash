@@ -1166,9 +1166,10 @@ namespace CC.Flash
 					}
 				}
 
-				if (GET_CHIP_ID() && READ_STATUS())
+				if (GET_CHIP_ID() && READ_STATUS()) {
 					setConnected();
-				else
+					groupAllControls.Enabled = true;
+				} else
 					setDisconnected();
 			}
 			else
