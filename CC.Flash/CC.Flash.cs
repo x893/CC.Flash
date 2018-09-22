@@ -1489,6 +1489,15 @@ namespace CC.Flash
 
 			DEBUG_INIT(false);
 		}
-		#endregion
-	}
+        #endregion
+
+        private void btnChipErase_Click(object sender, EventArgs e)
+        {
+            string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
+            if (parseOK(response))
+            {
+                MessageBox.Show("Chip Erased");
+            }
+        }
+    }
 }
