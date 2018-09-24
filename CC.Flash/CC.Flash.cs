@@ -194,29 +194,24 @@ namespace CC.Flash
 				port.ReadChar();
 
 			command = prepareCommand(command);
+      port.Write(command);
+
 			int retryCmd = 10;
-			int idx = 0;
 			while (--retry > 0)
 			{
 				if (!waiting)
 					break;
 
-				if (idx < command.Length)
-				{
-					port.Write(command.Substring(idx++, 1));
-					Thread.Sleep(1);
-				}
-
 				if (port.BytesToRead == 0)
 				{
 					Application.DoEvents();
 					Thread.Sleep(1);
-					if (command == "\r")
-						if (retryCmd-- == 0)
-						{
-							retryCmd = 10;
-							idx = 0;
-						}
+					if (command == "\r" && retryCmd-- == 0)
+					{
+						retryCmd = 10;
+						port.Write(command);
+						Thread.Sleep(1);
+					}
 				}
 				else
 				{
@@ -820,11 +815,9 @@ namespace CC.Flash
 				else
 				{
 					statusLine.Text = "WRITE_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
@@ -860,18 +853,15 @@ namespace CC.Flash
 						else
 						{
 							statusLine.Text = "READ_XDATA error: Not a hex " + response.Substring(j * 2, 2);
-							LED(false);
 							return false;
 						}
 				}
 				else
 				{
 					statusLine.Text = "READ_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
@@ -909,18 +899,15 @@ namespace CC.Flash
 						else
 						{
 							statusLine.Text = "READ_CODE error: Not a hex " + response.Substring(j * 2, 2);
-							LED(false);
 							return false;
 						}
 				}
 				else
 				{
 					statusLine.Text = "READ_XDATA error:" + response;
-					LED(false);
 					return false;
 				}
 			}
-			LED(false);
 			return true;
 		}
 		#endregion
@@ -1387,7 +1374,10 @@ namespace CC.Flash
 				{
 					if (fs != null)
 						fs.Close();
-					DEBUG_INIT(false);
+					RESET(true);
+					RESET(false);
+					inDebugMode = false;
+					//DEBUG_INIT(false);
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
 				}
