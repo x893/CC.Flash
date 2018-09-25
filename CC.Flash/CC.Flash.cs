@@ -11,6 +11,7 @@ using System.Drawing;
 using CC.Flash.Properties;
 using System.IO;
 using System.Configuration;
+using System.Diagnostics;
 #endregion
 
 namespace CC.Flash
@@ -183,7 +184,7 @@ namespace CC.Flash
 				return null;
 
 			string response = string.Empty;
-			const int retryMax = 500;
+			const int retryMax = 1000;
 			int retry = retryMax;
 
 			if (msg != null)
@@ -194,7 +195,7 @@ namespace CC.Flash
 				port.ReadChar();
 
 			command = prepareCommand(command);
-      port.Write(command);
+			port.Write(command);
 
 			int retryCmd = 10;
 			while (--retry > 0)
@@ -814,6 +815,7 @@ namespace CC.Flash
 					continue;
 				else
 				{
+					MessageBox.Show("WRITE_XDATA error:" + response);
 					statusLine.Text = "WRITE_XDATA error:" + response;
 					return false;
 				}
@@ -852,12 +854,14 @@ namespace CC.Flash
 							buffer[i++] = data;
 						else
 						{
+						  MessageBox.Show("READ_XDATA error: Not a hex " + response.Substring(j * 2, 2));
 							statusLine.Text = "READ_XDATA error: Not a hex " + response.Substring(j * 2, 2);
 							return false;
 						}
 				}
 				else
 				{
+				  MessageBox.Show(statusLine.Text = "READ_XDATA error:" + response);
 					statusLine.Text = "READ_XDATA error:" + response;
 					return false;
 				}
@@ -982,7 +986,7 @@ namespace CC.Flash
 			if (valid)
 			{
 				byte status;
-				int retry = 5;
+				int retry = 10;
 				do
 				{
 					READ_STATUS(out status);
@@ -1301,6 +1305,8 @@ namespace CC.Flash
 			if (File.Exists(filename.Text))
 			{
 				FileStream fs = null;
+				Stopwatch time = null;
+				bool noError = true;
 				try
 				{
 					groupAllControls.Enabled = false;
@@ -1323,6 +1329,7 @@ namespace CC.Flash
 					progressBar.Maximum = (int)(length / (long)FLASH_PAGE_SIZE) + 1;
 					progressBar.Value = progressBar.Minimum;
 
+					time = Stopwatch.StartNew();
 					long pageAddress = 0;
 					while (valid && length > 0)
 					{
@@ -1346,6 +1353,9 @@ namespace CC.Flash
 							if (!isPageEmpty(buffer))
 							{
 								valid = WRITE_PAGE_FLASH(pageAddress, buffer, cbErasePage.Checked);
+								if (!valid) {
+									MessageBox.Show("Write Failed");
+								}
 								if (valid && cbVerifyAfterWrite.Checked)
 								{
 									byte[] code;
@@ -1354,6 +1364,7 @@ namespace CC.Flash
 									{
 										if (buffer[i] != code[i])
 										{
+											MessageBox.Show("Verify Failed");
 											valid = false;
 											break;
 										}
@@ -1365,9 +1376,11 @@ namespace CC.Flash
 						else
 							MessageBox.Show("File read not persistance");
 					}
+					noError = valid;
 				}
 				catch (Exception ex)
 				{
+					noError = false;
 					MessageBox.Show("Error: " + ex.Message);
 				}
 				finally
@@ -1380,6 +1393,9 @@ namespace CC.Flash
 					//DEBUG_INIT(false);
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
+					time.Stop();
+					if (noError)
+						statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
 				}
 			}
 			else
@@ -1399,6 +1415,7 @@ namespace CC.Flash
 					return;
 			}
 			FileStream fs = null;
+			Stopwatch time = null;
 			try
 			{
 				groupAllControls.Enabled = false;
@@ -1412,6 +1429,7 @@ namespace CC.Flash
 				progressBar.Maximum = (int)(FLASH_SIZE / (long)FLASH_PAGE_SIZE);
 				progressBar.Value = progressBar.Minimum;
 
+				time = Stopwatch.StartNew();
 				long pageAddress = 0;
 				byte[] buffer = null;
 				while (valid && pageAddress < FLASH_SIZE)
@@ -1434,6 +1452,8 @@ namespace CC.Flash
 				DEBUG_INIT(false);
 				progressBar.Value = progressBar.Minimum;
 				groupAllControls.Enabled = true;
+				time.Stop();
+				statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
 			}
 		}
 		#endregion
@@ -1479,15 +1499,15 @@ namespace CC.Flash
 
 			DEBUG_INIT(false);
 		}
-        #endregion
+		#endregion
 
-        private void btnChipErase_Click(object sender, EventArgs e)
-        {
-            string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
-            if (parseOK(response))
-            {
-                MessageBox.Show("Chip Erased");
-            }
-        }
-    }
+		private void btnChipErase_Click(object sender, EventArgs e)
+		{
+			string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
+			if (parseOK(response))
+			{
+				MessageBox.Show("Chip Erased");
+			}
+		}
+	}
 }
