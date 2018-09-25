@@ -26,7 +26,7 @@ void setup() {
   FastGPIO::Pin<CC_DD>::setOutputLow();
   FastGPIO::Pin<CC_RST>::setInputPulledUp();
 
-  Serial.begin(115200);
+  Serial.begin(250000);
   LED_OFF();
   Serial.print("\r\n:");
 }
@@ -389,16 +389,18 @@ void dbg_write(byte data) {
   FastGPIO::Pin<CC_DD>::setOutputValueLow();
 }
 
+char nibbleToHex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
 void printHex(unsigned char data) {
-  if (data < 0x10)
-    Serial.print('0');
-  Serial.print(data, HEX);
+  byte nibble1 = data >> 4;
+  Serial.write(nibbleToHex[nibble1]);
+  byte nibble2 = data & 0xF;
+  Serial.write(nibbleToHex[nibble2]);
 }
 
 void printHexln(unsigned char data) {
-  if (data < 0x10)
-    Serial.print('0');
-  Serial.println(data, HEX);
+  printHex(data);
+  Serial.println("");
 }
 
 byte dbg_instr(byte in0, byte in1, byte in2) {

@@ -6,7 +6,7 @@
       <Value Profile="(Default)">COM13</Value>
     </Setting>
     <Setting Name="Baudrate" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">115200</Value>
+      <Value Profile="(Default)">250000</Value>
     </Setting>
     <Setting Name="AutoConnect" Type="System.String" Scope="User">
       <Value Profile="(Default)">True</Value>
