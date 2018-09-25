@@ -7,7 +7,7 @@
 #define CC_DD             6
 #define CC_RST            7
 
-#define BUFFER_SIZE       140
+#define BUFFER_SIZE       255
 
 #define READ_TYPE_CODE    0
 #define READ_TYPE_XDATA   1
@@ -26,7 +26,7 @@ void setup() {
   FastGPIO::Pin<CC_DD>::setOutputLow();
   FastGPIO::Pin<CC_RST>::setInputPulledUp();
 
-  Serial.begin(250000);
+  Serial.begin(500000);
   LED_OFF();
   Serial.print("\r\n:");
 }
@@ -149,8 +149,8 @@ void CMD_XDATA() {
     sendOK();
     return;
   }
-  if (cnt > 64) {
-    Serial.println("NO MORE THAN 64 BYTES");
+  if (cnt > 120) {
+    Serial.println("NO MORE THAN 120 BYTES");
     sendERROR();
     return;
   }

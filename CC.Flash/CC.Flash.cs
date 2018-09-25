@@ -792,7 +792,7 @@ namespace CC.Flash
 		#region WRITE_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool WRITE_XDATA_MEMORY(int address, byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			const int PACKET_SIZE = 120;
 
 			if (!DEBUG_INIT())
 				return false;
@@ -827,7 +827,7 @@ namespace CC.Flash
 		#region READ_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool READ_XDATA_MEMORY(int address, int length, out byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			const int PACKET_SIZE = 120;
 			buffer = null;
 			if (!DEBUG_INIT())
 				return false;
