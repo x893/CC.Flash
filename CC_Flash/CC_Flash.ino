@@ -385,6 +385,8 @@ byte dbg_read() {
     dbg_clock_high();
     data <<= 1;
     asm("nop");
+    asm("nop");
+    asm("nop");
     if (FastGPIO::Pin<CC_DD>::isInputHigh())
       data |= 0x01;
     dbg_clock_low();
