@@ -820,8 +820,8 @@ namespace CC.Flash
 					if (GENERATION == 2) {
 						return true; // TODO???
 					} else if (GENERATION == 1) {
-            if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
-              return false;
+						if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
+							return false;
 						if ((sleepReg & 0x40) == 0x40)
 							return true;
 					}
@@ -1007,88 +1007,88 @@ namespace CC.Flash
 		{
 			bool valid = true;
 
-      if (GENERATION == 2) {
+			if (GENERATION == 2) {
 
-        List<byte> routine = new List<byte>(1024);
-      	addRoutine(routine, 0x90, 0x62, 0x71);                                                    //  mov DPTR, #FADDRL;
-      	addRoutine(routine, 0x74, (byte)((iPageAddress/FLASH_WORD_SIZE) & 0xFF));                 //  mov A, #page address lo;
-        addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
-        addRoutine(routine, 0xA3);                                                                //  inc DPTR;
-        addRoutine(routine, 0x74, (byte)(((iPageAddress/FLASH_WORD_SIZE) >> 8) & 0xFF));          //  mov A, #page address hi;
-        addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
-        addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
-        addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
-        if (erasePage) {
-          addRoutine(routine, 0x74, 0x01);                                                        //  mov A, #0x01;       // ERASE
-          addRoutine(routine, 0xF0);                                                              //  movx @DPTR1, A;
-          addRoutine(routine, 0xE0);                                          // eraseWaitLoop:   //  movx A, @DPTR1;
-          addRoutine(routine, 0x20, 0xE7, 0xFC);                                                  //  jb ACC_BUSY, eraseWaitLoop;
-        }
-        addRoutine(routine, 0x74, 0x02);                                                          //  mov A, #0x02;       // WRITE
-        addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
-        addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
-        addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, #0x00;
-        addRoutine(routine, 0x90, 0x00, 0x00);                                                    //  mov DPTR0, #0x0000; // Initialize the data pointer
-        addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
-        addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
-        addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
-        addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR0;
-        addRoutine(routine, 0xA3);                                                                //  inc DPTR0;
-        addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
-        addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
-        addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
-        addRoutine(routine, 0xDD, 0xF5);                                                          //  djnz R5, writeWordLoop;
-        addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, 0x01;
-        addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
-        addRoutine(routine, 0xE0);                                            // writeWaitLoop:   //  movx A, @DPTR1;     // Wait for flash write to complete
-        addRoutine(routine, 0x20, 0xE6, 0xFC);                                                    //  jb ACC_SWBSY, writeWaitLoop;
-        addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
-        addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
-      	addRoutine(routine, 0xDE, 0xE1);                                                          //  djnz R6, writeLoop;
-        addRoutine(routine, 0xDF, 0xDF);                                                          //  djnz R7, writeLoop;
-        addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
-        addRoutine(routine, 0x74, 0x0);                                                           //  mov A, #0x00;
-        addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
-        addRoutine(routine, 0xA5);                                            // loop:            //  db 0xA5;            // Done, fake a breakpoint
-      	addRoutine(routine, 0x80, 0xFD);                                                          //  jmp loop;
+				List<byte> routine = new List<byte>(1024);
+				addRoutine(routine, 0x90, 0x62, 0x71);                                                    //  mov DPTR, #FADDRL;
+				addRoutine(routine, 0x74, (byte)((iPageAddress/FLASH_WORD_SIZE) & 0xFF));                 //  mov A, #page address lo;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR;
+				addRoutine(routine, 0x74, (byte)(((iPageAddress/FLASH_WORD_SIZE) >> 8) & 0xFF));          //  mov A, #page address hi;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				if (erasePage) {
+					addRoutine(routine, 0x74, 0x01);                                                        //  mov A, #0x01;       // ERASE
+					addRoutine(routine, 0xF0);                                                              //  movx @DPTR1, A;
+					addRoutine(routine, 0xE0);                                          // eraseWaitLoop:   //  movx A, @DPTR1;
+					addRoutine(routine, 0x20, 0xE7, 0xFC);                                                  //  jb ACC_BUSY, eraseWaitLoop;
+				}
+				addRoutine(routine, 0x74, 0x02);                                                          //  mov A, #0x02;       // WRITE
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, #0x00;
+				addRoutine(routine, 0x90, 0x00, 0x00);                                                    //  mov DPTR0, #0x0000; // Initialize the data pointer
+				addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
+				addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
+				addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
+				addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR0;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR0;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
+				addRoutine(routine, 0xDD, 0xF5);                                                          //  djnz R5, writeWordLoop;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, 0x01;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				addRoutine(routine, 0xE0);                                            // writeWaitLoop:   //  movx A, @DPTR1;     // Wait for flash write to complete
+				addRoutine(routine, 0x20, 0xE6, 0xFC);                                                    //  jb ACC_SWBSY, writeWaitLoop;
+				addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
+				addRoutine(routine, 0xDE, 0xE1);                                                          //  djnz R6, writeLoop;
+				addRoutine(routine, 0xDF, 0xDF);                                                          //  djnz R7, writeLoop;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				addRoutine(routine, 0x74, 0x0);                                                           //  mov A, #0x00;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0xA5);                                            // loop:            //  db 0xA5;            // Done, fake a breakpoint
+				addRoutine(routine, 0x80, 0xFD);                                                          //  jmp loop;
 
-        valid = valid ? WRITE_XDATA_MEMORY(0x0000, buffer) : false;
-        valid = valid ? WRITE_XDATA_MEMORY(0x0000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
-        valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x08) : false; // MEMCTR: Enable XDATA map to code, XMAP = 1 (leave everything else the default values)
-        valid = valid ? SET_PC(0x8000 + FLASH_PAGE_SIZE) : false;
-        valid = valid ? RESUME() : false;
+				valid = valid ? WRITE_XDATA_MEMORY(0x0000, buffer) : false;
+				valid = valid ? WRITE_XDATA_MEMORY(0x0000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
+				valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x08) : false; // MEMCTR: Enable XDATA map to code, XMAP = 1 (leave everything else the default values)
+				valid = valid ? SET_PC(0x8000 + FLASH_PAGE_SIZE) : false;
+				valid = valid ? RESUME() : false;
 
-      } else { // GENERATION == 1
+			} else { // GENERATION == 1
 
-        List<byte> routine = new List<byte>(1024);
-        addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E));  //  mov FADDRH, #imm;
-        addRoutine(routine, 0x75, 0xAC, 0x00);                                                    //  mov FADDRL, #00;
-        if (erasePage) {
-          addRoutine(routine, 0x75, 0xAE, 0x01);                                                  //  mov FLC, #01H;      // ERASE
-          addRoutine(routine, 0xE5, 0xAE);                                    // eraseWaitLoop:   //  mov A, FLC;         // Wait for flash erase to complete
-          addRoutine(routine, 0x20, 0xE7, 0xFB);                                                  //  jb ACC_BUSY, eraseWaitLoop
-        }
-        addRoutine(routine, 0x90, 0xF0, 0x00);                                                    //  mov DPTR, #F000H;   // Initialize the data pointer
-        addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
-        addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
-        addRoutine(routine, 0x75, 0xAE, 0x02);                                                    //  mov FLC, #02H;      // WRITE
-        addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
-        addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR;
-        addRoutine(routine, 0xA3);                                                                //  inc DPTR;
-        addRoutine(routine, 0xF5, 0xAF);                                                          //  mov FWDATA, A;
-        addRoutine(routine, 0xDD, 0xFA);                                                          //  djnz R5, writeWordLoop;
-        addRoutine(routine, 0xE5, 0xAE);                                      // writeWaitLoop:   //  mov A, FLC;         // Wait for flash write to complete
-        addRoutine(routine, 0x20, 0xE6, 0xFB);                                                    //  jb ACC_SWBSY, writeWaitLoop
-        addRoutine(routine, 0xDE, 0xF1);                                                          //  djnz R6, writeLoop;
-        addRoutine(routine, 0xDF, 0xEF);                                                          //  djnz R7, writeLoop;
-        addRoutine(routine, 0xA5);                                                                //  db 0xA5;            // Done, fake a breakpoint
+				List<byte> routine = new List<byte>(1024);
+				addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E));  //  mov FADDRH, #imm;
+				addRoutine(routine, 0x75, 0xAC, 0x00);                                                    //  mov FADDRL, #00;
+				if (erasePage) {
+					addRoutine(routine, 0x75, 0xAE, 0x01);                                                  //  mov FLC, #01H;      // ERASE
+					addRoutine(routine, 0xE5, 0xAE);                                    // eraseWaitLoop:   //  mov A, FLC;         // Wait for flash erase to complete
+					addRoutine(routine, 0x20, 0xE7, 0xFB);                                                  //  jb ACC_BUSY, eraseWaitLoop
+				}
+				addRoutine(routine, 0x90, 0xF0, 0x00);                                                    //  mov DPTR, #F000H;   // Initialize the data pointer
+				addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
+				addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
+				addRoutine(routine, 0x75, 0xAE, 0x02);                                                    //  mov FLC, #02H;      // WRITE
+				addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
+				addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR;
+				addRoutine(routine, 0xF5, 0xAF);                                                          //  mov FWDATA, A;
+				addRoutine(routine, 0xDD, 0xFA);                                                          //  djnz R5, writeWordLoop;
+				addRoutine(routine, 0xE5, 0xAE);                                      // writeWaitLoop:   //  mov A, FLC;         // Wait for flash write to complete
+				addRoutine(routine, 0x20, 0xE6, 0xFB);                                                    //  jb ACC_SWBSY, writeWaitLoop
+				addRoutine(routine, 0xDE, 0xF1);                                                          //  djnz R6, writeLoop;
+				addRoutine(routine, 0xDF, 0xEF);                                                          //  djnz R7, writeLoop;
+				addRoutine(routine, 0xA5);                                                                //  db 0xA5;            // Done, fake a breakpoint
 
-        valid = valid ? WRITE_XDATA_MEMORY(0xF000, buffer) : false;
-        valid = valid ? WRITE_XDATA_MEMORY(0xF000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
-        valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false; // MEMCTR: Enable Unified mapping, MUNIF = 1 (leave everything else the default values)
-        valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
-        valid = valid ? RESUME() : false;
-      }
+				valid = valid ? WRITE_XDATA_MEMORY(0xF000, buffer) : false;
+				valid = valid ? WRITE_XDATA_MEMORY(0xF000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
+				valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false; // MEMCTR: Enable Unified mapping, MUNIF = 1 (leave everything else the default values)
+				valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
+				valid = valid ? RESUME() : false;
+			}
 			if (valid)
 			{
 				byte status;
