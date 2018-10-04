@@ -242,7 +242,6 @@ bool CMD_EXTENDED_WRITE() {
     dbg_write(getHexByte(idx));
     idx += 2;
   }
-  cc_delay(10);
   return true;
 }
 
@@ -253,11 +252,13 @@ bool CMD_EXTENDED_READ() {
   Serial.print("READ:");
   byte cnt = inBuffer[idx++] - '0';
   byte csum = 0;
+  dbg_begin_response();
   while (cnt-- > 0) {
     byte data = dbg_read();
     csum += data;
     printHex(data);
   }
+  dbg_end_response();
   csum = (0 - (~csum));
   printHexln(csum);
   return true;
@@ -359,25 +360,40 @@ void dbg_enter() {
   dbg_reset(0);
 }
 
-byte dbg_read() {
-  byte cnt, data;
+void dbg_begin_response() {
   FastGPIO::Pin<CC_DD>::setInput();
-  for (cnt = 8; cnt; cnt--) {
+  asm("nop");
+  asm("nop"); // Need to delay for at least 83 ns.
+  // Wait for the interface to be ready.
+  // This is primarily needed by the 'Gen2' CC25xx devices which have the ability to signal a delayed response
+  //  by setting the data line high when the programmer switches from write -> read mode.
+  while (FastGPIO::Pin<CC_DD>::isInputHigh()) {
+    for (byte cnt = 8; cnt; cnt--) {
+      dbg_clock_high();
+      dbg_clock_low();
+    }    
+  }
+}
+
+void dbg_end_response() {
+  FastGPIO::Pin<CC_DD>::setOutputLow();
+}
+
+byte dbg_read() {
+  byte data;
+  for (byte cnt = 8; cnt; cnt--) {
     dbg_clock_high();
     data <<= 1;
-    asm("nop \n");
+    asm("nop");
     if (FastGPIO::Pin<CC_DD>::isInputHigh())
       data |= 0x01;
     dbg_clock_low();
   }
-  FastGPIO::Pin<CC_DD>::setOutputLow();
   return data;
 }
 
 void dbg_write(byte data) {
-  byte cnt;
-  FastGPIO::Pin<CC_DD>::setOutputLow();
-  for (cnt = 8; cnt; cnt--) {
+  for (byte cnt = 8; cnt; cnt--) {
     if (data & 0x80)
       FastGPIO::Pin<CC_DD>::setOutputValueHigh();
     else
@@ -386,7 +402,6 @@ void dbg_write(byte data) {
     data <<= 1;
     dbg_clock_low();
   }
-  FastGPIO::Pin<CC_DD>::setOutputValueLow();
 }
 
 char nibbleToHex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -408,23 +423,32 @@ byte dbg_instr(byte in0, byte in1, byte in2) {
   dbg_write(in0);
   dbg_write(in1);
   dbg_write(in2);
-  //cc_delay(6);
-  return dbg_read();
+
+  dbg_begin_response();
+  byte response = dbg_read();
+  dbg_end_response();
+  return response;
 }
 
 byte dbg_instr(byte in0, byte in1) {
   dbg_write(0x56);
   dbg_write(in0);
   dbg_write(in1);
-  //cc_delay(6);
-  return dbg_read();
+  
+  dbg_begin_response();
+  byte response = dbg_read();
+  dbg_end_response();
+  return response;
 }
 
 byte dbg_instr(byte in0) {
   dbg_write(0x55);
   dbg_write(in0);
-  //cc_delay(6);
-  return dbg_read();
+
+  dbg_begin_response();
+  byte response = dbg_read();
+  dbg_end_response();
+  return response;
 }
 
 void sendERROR() {
