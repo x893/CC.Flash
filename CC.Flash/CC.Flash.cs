@@ -817,11 +817,11 @@ namespace CC.Flash
 				byte sleepReg;
 				while (retry-- > 0)
 				{
-					if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
-						return false;
 					if (GENERATION == 2) {
 						return true; // TODO???
 					} else if (GENERATION == 1) {
+            if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
+              return false;
 						if ((sleepReg & 0x40) == 0x40)
 							return true;
 					}
