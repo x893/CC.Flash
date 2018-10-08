@@ -11,6 +11,7 @@ using System.Drawing;
 using CC.Flash.Properties;
 using System.IO;
 using System.Configuration;
+using System.Diagnostics;
 #endregion
 
 namespace CC.Flash
@@ -32,23 +33,36 @@ namespace CC.Flash
 		char[] DELIM_CRLF = new char[] { '\r', '\n' };
 		char[] DELIM_SPACE = new char[] { ' ' };
 		char[] DELIM_SEMICOMMA = new char[] { ';' };
-		// Chip Name, FlashSize, FlashPageSize, FlashWordSize
+		// Chip Name, FlashSize, FlashPageSize, FlashWordSize, Generation
 		string[] ChipDescriptors = new string[] {
-			"CC2511F32;8000;400;2",
-			"CC2511F16;4000;400;2",
-			"CC2511F08;2000;400;2",
-			"CC2510F32;8000;400;2",
-			"CC2510F16;4000;400;2",
-			"CC2510F08;2000;400;2",
-			"CC2431F128;20000;800;4",
-			"CC2431F64;10000;800;4",
-			"CC2431F32;8000;800;4",
-			"CC2430F128;20000;800;4",
-			"CC2430F64;10000;800;4",
-			"CC2430F32;8000;800;4",
-			"CC1110F32;8000;400;2",
-			"CC1110F16;4000;400;2",
-			"CC1110F08;2000;400;2",
+			"CC2541F256;40000;800;2;2",
+			"CC2541F128;20000;800;2;2",
+			"CC2540F256;40000;800;2;2",
+			"CC2540F128;20000;800;2;2",
+			"CC2533F96;18000;400;4;2",
+			"CC2533F64;10000;400;4;2",
+			"CC2533F32;8000;400;4;2",
+			"CC2531F256;40000;800;4;2",
+			"CC2531F128;20000;800;4;2",
+			"CC2530F256;40000;800;4;2",
+			"CC2530F128;20000;800;4;2",
+			"CC2530F64;10000;800;4;2",
+			"CC2530F32;8000;800;4;2",
+			"CC2511F32;8000;400;2;1",
+			"CC2511F16;4000;400;2;1",
+			"CC2511F08;2000;400;2;1",
+			"CC2510F32;8000;400;2;1",
+			"CC2510F16;4000;400;2;1",
+			"CC2510F08;2000;400;2;1",
+			"CC2431F128;20000;800;4;1",
+			"CC2431F64;10000;800;4;1",
+			"CC2431F32;8000;800;4;1",
+			"CC2430F128;20000;800;4;1",
+			"CC2430F64;10000;800;4;1",
+			"CC2430F32;8000;800;4;1",
+			"CC1110F32;8000;400;2;1",
+			"CC1110F16;4000;400;2;1",
+			"CC1110F08;2000;400;2;1",
 			null
 		};
 
@@ -60,6 +74,7 @@ namespace CC.Flash
 		long FLASH_SIZE;
 		int FLASH_PAGE_SIZE;
 		int FLASH_WORD_SIZE;
+		int GENERATION;
 		#endregion
 
 		public CCFlash()
@@ -183,7 +198,7 @@ namespace CC.Flash
 				return null;
 
 			string response = string.Empty;
-			const int retryMax = 500;
+			const int retryMax = 1000;
 			int retry = retryMax;
 
 			if (msg != null)
@@ -194,7 +209,7 @@ namespace CC.Flash
 				port.ReadChar();
 
 			command = prepareCommand(command);
-      port.Write(command);
+			port.Write(command);
 
 			int retryCmd = 10;
 			while (--retry > 0)
@@ -590,6 +605,31 @@ namespace CC.Flash
 
 					switch (id)
 					{
+						case 0x41:
+							labelChipSeries.Text = "CC2541";
+							loadChipModel("CC2541F256;CC2541F128");
+							chipModel.Enabled = true;
+							break;
+						case 0x8D:
+							labelChipSeries.Text = "CC2540";
+							loadChipModel("CC2540F256;CC2540F128");
+							chipModel.Enabled = true;
+							break;
+						case 0x95:
+							labelChipSeries.Text = "CC2533";
+							loadChipModel("CC2533F96;CC2533F64;CC2533F32");
+							chipModel.Enabled = true;
+							break;
+						case 0xB5:
+							labelChipSeries.Text = "CC2531";
+							loadChipModel("CC2531F256;CC2531F128");
+							chipModel.Enabled = true;
+							break;
+						case 0xA5:
+							labelChipSeries.Text = "CC2530";
+							loadChipModel("CC2530F256;CC2530F128;CC2530F64;CC2530F32");
+							chipModel.Enabled = true;
+							break;
 						case 0x91:
 							labelChipSeries.Text = "CC2511";
 							loadChipModel("CC2511F32;CC2511F16;CC2511F08");
@@ -777,10 +817,14 @@ namespace CC.Flash
 				byte sleepReg;
 				while (retry-- > 0)
 				{
-					if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
-						return false;
-					if ((sleepReg & 0x40) == 0x40)
-						return true;
+					if (GENERATION == 2) {
+						return true; // TODO???
+					} else if (GENERATION == 1) {
+						if (!dbg_DebugInstr(0xE5, 0xBE, out sleepReg))	//MOV A, SLEEP; (sleepReg = A)
+							return false;
+						if ((sleepReg & 0x40) == 0x40)
+							return true;
+					}
 				}
 				statusLine.Text = "No 0x40 in CLKCON";
 			}
@@ -791,7 +835,7 @@ namespace CC.Flash
 		#region WRITE_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool WRITE_XDATA_MEMORY(int address, byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			const int PACKET_SIZE = 120;
 
 			if (!DEBUG_INIT())
 				return false;
@@ -814,6 +858,7 @@ namespace CC.Flash
 					continue;
 				else
 				{
+					MessageBox.Show("WRITE_XDATA error:" + response);
 					statusLine.Text = "WRITE_XDATA error:" + response;
 					return false;
 				}
@@ -825,7 +870,7 @@ namespace CC.Flash
 		#region READ_XDATA_MEMORY(int address, byte[] buffer, int length) 
 		private bool READ_XDATA_MEMORY(int address, int length, out byte[] buffer)
 		{
-			const int PACKET_SIZE = 64;
+			const int PACKET_SIZE = 120;
 			buffer = null;
 			if (!DEBUG_INIT())
 				return false;
@@ -852,12 +897,14 @@ namespace CC.Flash
 							buffer[i++] = data;
 						else
 						{
+							MessageBox.Show("READ_XDATA error: Not a hex " + response.Substring(j * 2, 2));
 							statusLine.Text = "READ_XDATA error: Not a hex " + response.Substring(j * 2, 2);
 							return false;
 						}
 				}
 				else
 				{
+					MessageBox.Show(statusLine.Text = "READ_XDATA error:" + response);
 					statusLine.Text = "READ_XDATA error:" + response;
 					return false;
 				}
@@ -880,14 +927,23 @@ namespace CC.Flash
 			byte data;
 
 			bool valid = true;
-			valid = valid ? DEBUG_INSTR(0x75, 0xC7, (byte)(((bank << 4) | 0x01) & 0xFF)) : false;
+			if (GENERATION == 2) {
+				valid = DEBUG_INSTR(0x75, 0xC7, bank); // Map 32 kB bank to 0x8000-0xFFFF in XDATA
+			} else if (GENERATION == 1 && bank > 0) {
+				valid = DEBUG_INSTR(0x75, 0xC7, (byte)(((bank << 4) | 0x01) & 0xFF)); // Map 32 kB bank to 0x8000-0xFFFF in CODE (FMAP[1:0] in MEMCTR[5:4])
+			}
 			while(length > 0)
 			{
 				int sentBytes = length > PACKET_SIZE ? PACKET_SIZE : length;
-				string response = string.Format("MC{0:X4}{1:X2}", address, sentBytes);
+				string response = "";
+				if (GENERATION == 2) {
+					response = string.Format("MR{0:X4}{1:X2}", address + 0x8000, sentBytes); // Read from XDATA
+				} else if (GENERATION == 1) {
+					response = string.Format("MC{0:X4}{1:X2}", bank == 0 ? address : address + 0x8000, sentBytes); // Read from CODE
+				}
 				nextAddress += sentBytes;
 				length -= sentBytes;
-				response = sendCommand(response, string.Format("Sending READ_CODE ({0:X4}, {1}) ...", address, sentBytes));
+				response = sendCommand(response, string.Format("Sending READ_CODE (bank:{0}, addr:{1:X4}, len:{2}) ...", bank, address, sentBytes));
 				address = nextAddress;
 				if (parseOK(response))
 				{
@@ -951,38 +1007,92 @@ namespace CC.Flash
 		{
 			bool valid = true;
 
-			List<byte> routine = new List<byte>(1024);
-			addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E));
-			addRoutine(routine, 0x75, 0xAC, 0x00);
-			if (erasePage)
-			{
-				addRoutine(routine, 0x75, 0xAE, 0x01);
-				addRoutine(routine, 0xE5, 0xAE);
-				addRoutine(routine, 0x20, 0xE7, 0xFB);
+			if (GENERATION == 2) {
+
+				List<byte> routine = new List<byte>(1024);
+				addRoutine(routine, 0x90, 0x62, 0x71);                                                    //  mov DPTR, #FADDRL;
+				addRoutine(routine, 0x74, (byte)((iPageAddress/FLASH_WORD_SIZE) & 0xFF));                 //  mov A, #page address lo;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR;
+				addRoutine(routine, 0x74, (byte)(((iPageAddress/FLASH_WORD_SIZE) >> 8) & 0xFF));          //  mov A, #page address hi;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR, A;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				if (erasePage) {
+					addRoutine(routine, 0x74, 0x01);                                                        //  mov A, #0x01;       // ERASE
+					addRoutine(routine, 0xF0);                                                              //  movx @DPTR1, A;
+					addRoutine(routine, 0xE0);                                          // eraseWaitLoop:   //  movx A, @DPTR1;
+					addRoutine(routine, 0x20, 0xE7, 0xFC);                                                  //  jb ACC_BUSY, eraseWaitLoop;
+				}
+				addRoutine(routine, 0x74, 0x02);                                                          //  mov A, #0x02;       // WRITE
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, #0x00;
+				addRoutine(routine, 0x90, 0x00, 0x00);                                                    //  mov DPTR0, #0x0000; // Initialize the data pointer
+				addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
+				addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
+				addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
+				addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR0;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR0;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, #0x01;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
+				addRoutine(routine, 0xDD, 0xF5);                                                          //  djnz R5, writeWordLoop;
+				addRoutine(routine, 0x75, 0x92, 0x01);                                                    //  mov DPS, 0x01;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				addRoutine(routine, 0xE0);                                            // writeWaitLoop:   //  movx A, @DPTR1;     // Wait for flash write to complete
+				addRoutine(routine, 0x20, 0xE6, 0xFC);                                                    //  jb ACC_SWBSY, writeWaitLoop;
+				addRoutine(routine, 0x90, 0x62, 0x73);                                                    //  mov DPTR1, #FWDATA;
+				addRoutine(routine, 0x75, 0x92, 0x00);                                                    //  mov DPS, 0x00;
+				addRoutine(routine, 0xDE, 0xE1);                                                          //  djnz R6, writeLoop;
+				addRoutine(routine, 0xDF, 0xDF);                                                          //  djnz R7, writeLoop;
+				addRoutine(routine, 0x90, 0x62, 0x70);                                                    //  mov DPTR1, #FCTL;
+				addRoutine(routine, 0x74, 0x0);                                                           //  mov A, #0x00;
+				addRoutine(routine, 0xF0);                                                                //  movx @DPTR1, A;
+				addRoutine(routine, 0xA5);                                            // loop:            //  db 0xA5;            // Done, fake a breakpoint
+				addRoutine(routine, 0x80, 0xFD);                                                          //  jmp loop;
+
+				valid = valid ? WRITE_XDATA_MEMORY(0x0000, buffer) : false;
+				valid = valid ? WRITE_XDATA_MEMORY(0x0000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
+				valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x08) : false; // MEMCTR: Enable XDATA map to code, XMAP = 1 (leave everything else the default values)
+				valid = valid ? SET_PC(0x8000 + FLASH_PAGE_SIZE) : false;
+				valid = valid ? RESUME() : false;
+
+			} else { // GENERATION == 1
+
+				List<byte> routine = new List<byte>(1024);
+				addRoutine(routine, 0x75, 0xAD, (byte)(((iPageAddress >> 8) / FLASH_WORD_SIZE) & 0x7E));  //  mov FADDRH, #imm;
+				addRoutine(routine, 0x75, 0xAC, 0x00);                                                    //  mov FADDRL, #00;
+				if (erasePage) {
+					addRoutine(routine, 0x75, 0xAE, 0x01);                                                  //  mov FLC, #01H;      // ERASE
+					addRoutine(routine, 0xE5, 0xAE);                                    // eraseWaitLoop:   //  mov A, FLC;         // Wait for flash erase to complete
+					addRoutine(routine, 0x20, 0xE7, 0xFB);                                                  //  jb ACC_BUSY, eraseWaitLoop
+				}
+				addRoutine(routine, 0x90, 0xF0, 0x00);                                                    //  mov DPTR, #F000H;   // Initialize the data pointer
+				addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));     //  mov R7, #imm;
+				addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));            //  mov R6, #imm;
+				addRoutine(routine, 0x75, 0xAE, 0x02);                                                    //  mov FLC, #02H;      // WRITE
+				addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);                     // writeLoop:       //  mov R5, #imm;
+				addRoutine(routine, 0xE0);                                            // writeWordLoop:   //  movx A, @DPTR;
+				addRoutine(routine, 0xA3);                                                                //  inc DPTR;
+				addRoutine(routine, 0xF5, 0xAF);                                                          //  mov FWDATA, A;
+				addRoutine(routine, 0xDD, 0xFA);                                                          //  djnz R5, writeWordLoop;
+				addRoutine(routine, 0xE5, 0xAE);                                      // writeWaitLoop:   //  mov A, FLC;         // Wait for flash write to complete
+				addRoutine(routine, 0x20, 0xE6, 0xFB);                                                    //  jb ACC_SWBSY, writeWaitLoop
+				addRoutine(routine, 0xDE, 0xF1);                                                          //  djnz R6, writeLoop;
+				addRoutine(routine, 0xDF, 0xEF);                                                          //  djnz R7, writeLoop;
+				addRoutine(routine, 0xA5);                                                                //  db 0xA5;            // Done, fake a breakpoint
+
+				valid = valid ? WRITE_XDATA_MEMORY(0xF000, buffer) : false;
+				valid = valid ? WRITE_XDATA_MEMORY(0xF000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
+				valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false; // MEMCTR: Enable Unified mapping, MUNIF = 1 (leave everything else the default values)
+				valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
+				valid = valid ? RESUME() : false;
 			}
-			addRoutine(routine, 0x90, 0xF0, 0x00);
-			addRoutine(routine, 0x7F, (byte)(((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) >> 8) & 0xFF));
-			addRoutine(routine, 0x7E, (byte)((FLASH_PAGE_SIZE / FLASH_WORD_SIZE) & 0xFF));
-			addRoutine(routine, 0x75, 0xAE, 0x02);
-			addRoutine(routine, 0x7D, (byte)FLASH_WORD_SIZE);
-			addRoutine(routine, 0xE0);
-			addRoutine(routine, 0xA3);
-			addRoutine(routine, 0xF5, 0xAF);
-			addRoutine(routine, 0xDD, 0xFA);
-			addRoutine(routine, 0xE5, 0xAE);
-			addRoutine(routine, 0x20, 0xE6, 0xFB);
-			addRoutine(routine, 0xDE, 0xF1);
-			addRoutine(routine, 0xDF, 0xEF);
-			addRoutine(routine, 0xA5);
-			valid = valid ? WRITE_XDATA_MEMORY(0xF000, buffer) : false;
-			valid = valid ? WRITE_XDATA_MEMORY(0xF000 + FLASH_PAGE_SIZE, routine.ToArray()) : false;
-			valid = valid ? DEBUG_INSTR(0x75, 0xC7, 0x51) : false;
-			valid = valid ? SET_PC(0xF000 + FLASH_PAGE_SIZE) : false;
-			valid = valid ? RESUME() : false;
 			if (valid)
 			{
 				byte status;
-				int retry = 5;
+				int retry = 10;
 				do
 				{
 					READ_STATUS(out status);
@@ -998,7 +1108,7 @@ namespace CC.Flash
 		#region READ_FLASH_PAGE(long iPageAddress, int length, out byte[] code) 
 		private bool READ_FLASH_PAGE(long iPageAddress, int length, out byte[] code)
 		{
-			return READ_CODE_MEMORY((int)(iPageAddress & 0x7FFFF), (byte)((iPageAddress >> 15) & 0x03), length, out code);
+			return READ_CODE_MEMORY((int)(iPageAddress & 0x7FFF), (byte)((iPageAddress >> 15) & 0x07), length, out code);
 		}
 		#endregion
 
@@ -1178,12 +1288,13 @@ namespace CC.Flash
 					if (descriptor.StartsWith(model))
 					{
 						string[] param = descriptor.Split(DELIM_SEMICOMMA, StringSplitOptions.RemoveEmptyEntries);
-						if (param.Length >= 4)
+						if (param.Length >= 5)
 						{
 							if (
 								long.TryParse(param[1], NumberStyles.HexNumber, null, out FLASH_SIZE) &&
 								int.TryParse(param[2], NumberStyles.HexNumber, null, out FLASH_PAGE_SIZE) &&
-								int.TryParse(param[3], NumberStyles.HexNumber, null, out FLASH_WORD_SIZE)
+								int.TryParse(param[3], NumberStyles.HexNumber, null, out FLASH_WORD_SIZE) &&
+								int.TryParse(param[4], NumberStyles.HexNumber, null, out GENERATION)
 								)
 								labelChipSize.Text = string.Format("{0:d}K", FLASH_SIZE / 1024);
 
@@ -1301,6 +1412,8 @@ namespace CC.Flash
 			if (File.Exists(filename.Text))
 			{
 				FileStream fs = null;
+				Stopwatch time = null;
+				bool noError = true;
 				try
 				{
 					groupAllControls.Enabled = false;
@@ -1323,6 +1436,7 @@ namespace CC.Flash
 					progressBar.Maximum = (int)(length / (long)FLASH_PAGE_SIZE) + 1;
 					progressBar.Value = progressBar.Minimum;
 
+					time = Stopwatch.StartNew();
 					long pageAddress = 0;
 					while (valid && length > 0)
 					{
@@ -1346,6 +1460,9 @@ namespace CC.Flash
 							if (!isPageEmpty(buffer))
 							{
 								valid = WRITE_PAGE_FLASH(pageAddress, buffer, cbErasePage.Checked);
+								if (!valid) {
+									MessageBox.Show("Write Failed");
+								}
 								if (valid && cbVerifyAfterWrite.Checked)
 								{
 									byte[] code;
@@ -1354,6 +1471,7 @@ namespace CC.Flash
 									{
 										if (buffer[i] != code[i])
 										{
+											MessageBox.Show("Verify Failed");
 											valid = false;
 											break;
 										}
@@ -1365,9 +1483,11 @@ namespace CC.Flash
 						else
 							MessageBox.Show("File read not persistance");
 					}
+					noError = valid;
 				}
 				catch (Exception ex)
 				{
+					noError = false;
 					MessageBox.Show("Error: " + ex.Message);
 				}
 				finally
@@ -1380,6 +1500,9 @@ namespace CC.Flash
 					//DEBUG_INIT(false);
 					progressBar.Value = progressBar.Minimum;
 					groupAllControls.Enabled = true;
+					time.Stop();
+					if (noError)
+						statusLine.Text = "Wrote Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
 				}
 			}
 			else
@@ -1399,6 +1522,7 @@ namespace CC.Flash
 					return;
 			}
 			FileStream fs = null;
+			Stopwatch time = null;
 			try
 			{
 				groupAllControls.Enabled = false;
@@ -1412,6 +1536,7 @@ namespace CC.Flash
 				progressBar.Maximum = (int)(FLASH_SIZE / (long)FLASH_PAGE_SIZE);
 				progressBar.Value = progressBar.Minimum;
 
+				time = Stopwatch.StartNew();
 				long pageAddress = 0;
 				byte[] buffer = null;
 				while (valid && pageAddress < FLASH_SIZE)
@@ -1422,6 +1547,8 @@ namespace CC.Flash
 						fs.Write(buffer, 0, buffer.Length);
 					pageAddress += FLASH_PAGE_SIZE;
 				}
+				if (!valid)
+					MessageBox.Show("Read Failed");
 			}
 			catch (Exception ex)
 			{
@@ -1434,6 +1561,8 @@ namespace CC.Flash
 				DEBUG_INIT(false);
 				progressBar.Value = progressBar.Minimum;
 				groupAllControls.Enabled = true;
+				time.Stop();
+				statusLine.Text = "Read Flash in " + time.ElapsedMilliseconds / 1000.0 + "s";
 			}
 		}
 		#endregion
@@ -1479,15 +1608,15 @@ namespace CC.Flash
 
 			DEBUG_INIT(false);
 		}
-        #endregion
+		#endregion
 
-        private void btnChipErase_Click(object sender, EventArgs e)
-        {
-            string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
-            if (parseOK(response))
-            {
-                MessageBox.Show("Chip Erased");
-            }
-        }
-    }
+		private void btnChipErase_Click(object sender, EventArgs e)
+		{
+			string response = sendCommand("XW110", "Sending CHIP_ERASE ...");
+			if (parseOK(response))
+			{
+				MessageBox.Show("Chip Erased");
+			}
+		}
+	}
 }
